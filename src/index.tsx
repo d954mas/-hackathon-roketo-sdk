@@ -54,13 +54,14 @@ let initNear = function (){
                 // @ts-expect-error signAndSendTransaction is protected
                 signAndSendTransaction: account.signAndSendTransaction,
             };
-            JsToDef.send("NearInitConnectSuccess");
+            JsToDef.send("NearInitWalletSuccess");
 
         }).catch(function (error){
-            JsToDef.send("NearInitError");
+            JsToDef.send("NearInitError",{error:error});
             console.error("near connect error:" + error);
         });
     }else{
+        JsToDef.send("NearInitError",{error:"NearAlreadyInited"});
         console.error("near already existed")
     }
 
