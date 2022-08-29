@@ -1,6 +1,7 @@
 import {Buffer} from 'buffer';
 import {
     connect,
+    ConnectedWalletAccount,
     keyStores,
     transactions,
     WalletConnection,
@@ -21,17 +22,13 @@ const NEAR_CONSTANTS = {
 
 
 let keyStore = new keyStores.BrowserLocalStorageKeyStore();
-let walletConnection;
-let account;
+// @ts-ignore
+let walletConnection: WalletConnection;
+let account: ConnectedWalletAccount;
 let transactionMediator;
 
 declare const window: any;
 declare const JsToDef: any;
-
-// Anonymous function
-let testLib = function () {
-    console.log("testLib")
-};
 
 
 let initNear = function () {
@@ -65,17 +62,38 @@ let initNear = function () {
                 JsToDef.send("NearInitRoketoApiControlSuccess");
             })
             .catch(function (error) {
-                JsToDef.send("NearError", {error: error});
+                JsToDef.send("NearInitError", {error: error});
                 console.error("near connect error:" + error);
             });
     } else {
-        JsToDef.send("NearError", {error: "NearAlreadyInited"});
+        JsToDef.send("NearInitError", {error: "NearAlreadyInited"});
         console.error("near already existed")
     }
 
 }
 
+let isLoggedIn = function () {
+    if (account) {
+        return !!account.accountId;
+    }
+    return false
+}
+
+let login = function () {
+    if (isLoggedIn()) {
+        JsToDef.send("NearLoginAlready");
+    } else {
+        walletConnection.requestSignIn(NEAR_CONSTANTS.roketoContractName, 'CryptoNeon Hex').then(function () {
+                JsToDef.send("NearLoginSuccess");
+            }
+        ).catch(function () {
+            JsToDef.send("NearLoginFail");
+        });
+    }
+}
+
 window.game_sdk = {
     initNear: initNear,
-    testLib: testLib,
+    isLoggedIn: isLoggedIn,
+    login: login,
 }
