@@ -88,27 +88,18 @@ let initContract = function () {
     }
 }
 
-let contractGetGame = function (idx: Number) {
-    console.log("contractGetGame");
-    console.log(idx);
-    // @ts-ignore
-    gameContract.get_game(
-        {
-            index: idx,
-        },
-    ).then(function (game: any) {
-        console.log(game)
-        JsToDef.send("NearContractGetGame", {game: game});
-    }).catch(function (error: any) {
-        JsToDef.send("NearContractError", {error: error});
-    });
-}
-
 let isLoggedIn = function () {
     if (account) {
         return !!account.accountId;
     }
     return false
+}
+
+let getAccountId = function () {
+    if (account) {
+        return account.accountId ? account.accountId.toString() : null ;
+    }
+    return null;
 }
 
 let login = function () {
@@ -125,9 +116,44 @@ let login = function () {
     }
 }
 
+let contractGetGame = function (idx: Number) {
+    console.log("contractGetGame");
+    console.log(idx);
+    // @ts-ignore
+    gameContract.get_game(
+        {
+            index: idx,
+        },
+    ).then(function (game: any) {
+        console.log(game)
+        JsToDef.send("NearContractGetGame", {game: game});
+    }).catch(function (error: any) {
+        JsToDef.send("NearContractError", {error: error});
+    });
+}
+
+let contractCreateGame = function (firstPlayer: String, secondPlayer:String, fieldSize:Number) {
+    console.log("contractCreateGame");
+    // @ts-ignore
+    gameContract.create_game(
+        {
+            first_player: firstPlayer,
+            second_player: secondPlayer,
+            field_size: fieldSize,
+        },
+    ).then(function (game: any) {
+        console.log(game)
+        JsToDef.send("NearContractCreateGame", {game: game});
+    }).catch(function (error: any) {
+        JsToDef.send("NearContractError", {error: error});
+    });
+}
+
 window.game_sdk = {
     initNear: initNear,
     isLoggedIn: isLoggedIn,
     login: login,
     contractGetGame: contractGetGame,
+    contractCreateGame: contractCreateGame,
+    getAccountId: getAccountId,
 }
