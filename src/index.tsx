@@ -141,6 +141,8 @@ let contractCreateGame = function (firstPlayer: String, secondPlayer:String, fie
             second_player: secondPlayer,
             field_size: fieldSize,
         },
+        "300000000000000", // attached GAS (optional)
+        "1000000000000000000000000" // attached deposit in yoctoNEAR (optional)
     ).then(function (game: any) {
         console.log(game)
         JsToDef.send("NearContractCreateGame", {game: game});
