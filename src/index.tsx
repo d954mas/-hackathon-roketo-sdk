@@ -97,9 +97,9 @@ let isLoggedIn = function () {
 
 let getAccountId = function () {
     if (account) {
-        return account.accountId ? account.accountId.toString() : null ;
+        return account.accountId ? account.accountId.toString() : "" ;
     }
-    return null;
+    return "";
 }
 
 let login = function () {
