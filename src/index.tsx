@@ -7,7 +7,14 @@ import {
     WalletConnection,
 } from 'near-api-js';
 import type {Action as NearAction} from 'near-api-js/lib/transaction';
-import {createStream, getOutgoingStreams, initApiControl} from '@roketo/sdk';
+import {
+    addFunds,
+    createStream,
+    getOutgoingStreams,
+    getStreamLeftPercent,
+    initApiControl,
+    isActiveStream
+} from '@roketo/sdk';
 import type {FTContract, TransactionMediator} from '@roketo/sdk/dist/types';
 
 global.Buffer = Buffer;
@@ -181,11 +188,35 @@ let contractGetGamesActiveList = function (player: String) {
 
 //return true if user have stream. Pay for be premium
 let streamIsPremium = function () {
+    getOutgoingStreams(
+        {
+            from: 0,
+            limit:1,
+            contract:window.game_sdk.roketoApiControl.contract,
+            accountId: account.accountId,
+        }
+    ).then(function (streams) {
+        if(streams.length===0){
+            JsToDef.send("NearStreamIsPremium", {premium: false});
+        }else{
+            let stream = streams[0];
 
+            //     && stream.status == StreamStatus::Active
+            //                 && stream.receiver_id == env::current_account_id()
+            //                 && stream.available_to_withdraw() != stream.balance
+           let premium = isActiveStream(stream) && getStreamLeftPercent(stream) < 0// активный и есть деньги?
+            JsToDef.send("NearStreamIsPremium", {premium: premium});
+        }
+    }).catch(function (error){
+
+    })
 }
 
 //return create stream or add money to current stream
 let streamBuyPremium = function () {
+    //ЧТо за tokenContract
+    //Что за tokenAccountId
+    //Что за callbackUrl
     const tokenContract = new Contract(account, NEAR_CONSTANTS.gameContractName, {
         viewMethods: ['ft_balance_of', 'ft_metadata', 'storage_balance_of'],
         changeMethods: ['ft_transfer_call', 'storage_deposit', 'near_deposit'],
@@ -194,33 +225,50 @@ let streamBuyPremium = function () {
     //if have stream add money for 24h
     getOutgoingStreams(
         {
-            from: account.accountId,
+            from: 0,
             limit:1,
-            contract:NEAR_CONSTANTS.gameContractName,
+            contract:window.game_sdk.roketoApiControl.contract,
             accountId: account.accountId,
-
         }
-    )
-    //if no stream create it
-    //buy premium for day
-    createStream({
-        comment: 'buy premium',
-        deposit: '240000000000000000000000',
-        receiverId: NEAR_CONSTANTS.gameContractName,
-        tokenAccountId: NEAR_CONSTANTS.gameContractName,
-        commissionOnCreate: '100000000000000000000000',
-        tokensPerSec: '2777777777777777777',
-        delayed:false,
-        isExpirable:false,
-        isLocked: true,
-        color: null,
-        accountId: account.accountId,
-        tokenContract: tokenContract,
-        transactionMediator: transactionMediator,
-        roketoContractName: NEAR_CONSTANTS.roketoContractName,
-        wNearId: NEAR_CONSTANTS.wNearContractName,
-        financeContractName: NEAR_CONSTANTS.financeContractName,
-    });
+    ).then(function (streams) {
+        if(streams.length===0){
+            //if no stream create it
+            //buy premium for day
+            return createStream({
+                comment: 'buy premium',
+                deposit: '240000000000000000000000',
+                receiverId: NEAR_CONSTANTS.gameContractName,
+                tokenAccountId: NEAR_CONSTANTS.gameContractName,
+                commissionOnCreate: '100000000000000000000000',
+                tokensPerSec: '2777777777777777777',
+                delayed:false,
+                isExpirable:false,
+                isLocked: true,
+                color: null,
+                accountId: account.accountId,
+                tokenContract: tokenContract,
+                transactionMediator: transactionMediator,
+                roketoContractName: NEAR_CONSTANTS.roketoContractName,
+                wNearId: NEAR_CONSTANTS.wNearContractName,
+                financeContractName: NEAR_CONSTANTS.financeContractName,
+            });
+        }else{
+            return addFunds({
+                amount:"240000000000000000000000",
+                streamId:streams[0].id,
+                callbackUrl:"",
+                tokenAccountId:NEAR_CONSTANTS.gameContractName,
+                transactionMediator:transactionMediator,
+                roketoContractName:NEAR_CONSTANTS.roketoContractName,
+                wNearId:NEAR_CONSTANTS.wNearContractName,
+            })
+        }
+    }).then(function (){
+
+    }).catch(function (){
+
+    })
+
 }
 
 let streamCalculateEndTimestamp = function () {
