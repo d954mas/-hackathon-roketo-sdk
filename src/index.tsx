@@ -192,22 +192,23 @@ let streamIsPremium = function () {
     getOutgoingStreams(
         {
             from: 0,
-            limit: 1,
+            limit: 500,
             contract: window.game_sdk.roketoApiControl.contract,
             accountId: account.accountId,
         }
     ).then(function (streams) {
         console.log("streams")
         console.log(streams)
-        if (streams.length === 0) {
+        const premiumStream = streams.find(
+            ({ receiver_id }) => receiver_id === NEAR_CONSTANTS.gameContractName
+        );
+        if (!premiumStream) {
             JsToDef.send("NearStreamIsPremium", {premium: false});
         } else {
-            let stream = streams[0];
-
             //     && stream.status == StreamStatus::Active
             //                 && stream.receiver_id == env::current_account_id()
             //                 && stream.available_to_withdraw() != stream.balance
-            let premium = isActiveStream(stream) && getStreamLeftPercent(stream) < 0// активный и есть деньги?
+            let premium = isActiveStream(premiumStream) && getStreamLeftPercent(premiumStream) < 0// активный и есть деньги?
             JsToDef.send("NearStreamIsPremium", {premium: premium});
         }
     }).catch(function (error) {
@@ -286,15 +287,18 @@ let streamCalculateEndTimestamp = function () {
     getOutgoingStreams(
         {
             from: 0,
-            limit: 1,
+            limit: 500,
             contract: window.game_sdk.roketoApiControl.contract,
             accountId: account.accountId,
         }
     ).then(function (streams) {
-        if (streams.length === 0) {
+        const premiumStream = streams.find(
+            ({ receiver_id }) => receiver_id === NEAR_CONSTANTS.gameContractName
+        );
+        if (!premiumStream) {
             JsToDef.send("NearStreamCalculateEndTimestamp",{timestamp:0});
         } else {
-            let timestamp = calculateEndTimestamp(streams[0])
+            let timestamp = calculateEndTimestamp(premiumStream)
             JsToDef.send("NearStreamCalculateEndTimestamp",{timestamp:timestamp});
         }
     }).catch(function (error) {
