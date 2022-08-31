@@ -7,8 +7,8 @@ import {
     WalletConnection,
 } from 'near-api-js';
 import type {Action as NearAction} from 'near-api-js/lib/transaction';
-import {initApiControl} from '@roketo/sdk';
-import type {TransactionMediator} from '@roketo/sdk/dist/types';
+import {createStream, getOutgoingStreams, initApiControl} from '@roketo/sdk';
+import type {FTContract, TransactionMediator} from '@roketo/sdk/dist/types';
 
 global.Buffer = Buffer;
 const NEAR_CONSTANTS = {
@@ -17,7 +17,7 @@ const NEAR_CONSTANTS = {
     networkId: 'testnet',
     roketoContractName: 'streaming-r-v2.dcversus.testnet',
     financeContractName: 'finance-r-v2.dcversus.testnet',
-    wNearContractName: 'wnear.testnet',
+    wNearContractName: 'wrap.testnet',
     gameContractName: 'cryptoneonhex_d954mas.testnet',
 };
 
@@ -26,7 +26,7 @@ let keyStore = new keyStores.BrowserLocalStorageKeyStore();
 // @ts-ignore
 let walletConnection: WalletConnection;
 let account: ConnectedWalletAccount;
-let transactionMediator;
+let transactionMediator: TransactionMediator;
 let gameContract: Contract;
 
 declare const window: any;
@@ -81,7 +81,7 @@ let initContract = function () {
             account, // the account object that is connecting
             NEAR_CONSTANTS.gameContractName,
             {
-                viewMethods: ["get_game","get_games_active_list","get_games_list"], // view methods do not change state but usually return a value
+                viewMethods: ["get_game", "get_games_active_list", "get_games_list"], // view methods do not change state but usually return a value
                 changeMethods: ["create_game"], // change methods modify state
             }
         );
@@ -97,7 +97,7 @@ let isLoggedIn = function () {
 
 let getAccountId = function () {
     if (account) {
-        return account.accountId ? account.accountId.toString() : "" ;
+        return account.accountId ? account.accountId.toString() : "";
     }
     return "";
 }
@@ -132,7 +132,7 @@ let contractGetGame = function (idx: Number) {
     });
 }
 
-let contractCreateGame = function (firstPlayer: String, secondPlayer:String, fieldSize:Number) {
+let contractCreateGame = function (firstPlayer: String, secondPlayer: String, fieldSize: Number) {
     console.log("contractCreateGame");
     // @ts-ignore
     gameContract.create_game(
@@ -178,6 +178,55 @@ let contractGetGamesActiveList = function (player: String) {
         JsToDef.send("NearContractError", {error: error});
     });
 }
+
+//return true if user have stream. Pay for be premium
+let streamIsPremium = function () {
+
+}
+
+//return create stream or add money to current stream
+let streamBuyPremium = function () {
+    const tokenContract = new Contract(account, NEAR_CONSTANTS.gameContractName, {
+        viewMethods: ['ft_balance_of', 'ft_metadata', 'storage_balance_of'],
+        changeMethods: ['ft_transfer_call', 'storage_deposit', 'near_deposit'],
+    }) as FTContract
+
+    //if have stream add money for 24h
+    getOutgoingStreams(
+        {
+            from: account.accountId,
+            limit:1,
+            contract:NEAR_CONSTANTS.gameContractName,
+            accountId: account.accountId,
+
+        }
+    )
+    //if no stream create it
+    //buy premium for day
+    createStream({
+        comment: 'buy premium',
+        deposit: '240000000000000000000000',
+        receiverId: NEAR_CONSTANTS.gameContractName,
+        tokenAccountId: NEAR_CONSTANTS.gameContractName,
+        commissionOnCreate: '100000000000000000000000',
+        tokensPerSec: '2777777777777777777',
+        delayed:false,
+        isExpirable:false,
+        isLocked: true,
+        color: null,
+        accountId: account.accountId,
+        tokenContract: tokenContract,
+        transactionMediator: transactionMediator,
+        roketoContractName: NEAR_CONSTANTS.roketoContractName,
+        wNearId: NEAR_CONSTANTS.wNearContractName,
+        financeContractName: NEAR_CONSTANTS.financeContractName,
+    });
+}
+
+let streamCalculateEndTimestamp = function () {
+
+}
+
 
 window.game_sdk = {
     initNear: initNear,
