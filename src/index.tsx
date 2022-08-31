@@ -301,7 +301,7 @@ window.game_sdk = {
     getAccountId: getAccountId,
     contractGetGamesList: contractGetGamesList,
     contractGetGamesActiveList: contractGetGamesActiveList,
-    streamBuyPremium: streamBuyPremium(),
-    streamIsPremium: streamIsPremium(),
-    streamCalculateEndTimestamp: streamCalculateEndTimestamp()
+    streamBuyPremium: streamBuyPremium,
+    streamIsPremium: streamIsPremium,
+    streamCalculateEndTimestamp: streamCalculateEndTimestamp
 }
