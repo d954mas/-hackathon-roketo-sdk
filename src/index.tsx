@@ -240,7 +240,7 @@ let streamBuyPremium = function () {
         const premiumStream = streams.find(
             ({ receiver_id }) => receiver_id === NEAR_CONSTANTS.gameContractName
         );
-        if (premiumStream) {
+        if (!premiumStream) {
             //if no stream create it
             //buy premium for day
             JsToDef.send("NearStreamBuyPremiumCreateStream");
@@ -266,7 +266,7 @@ let streamBuyPremium = function () {
             JsToDef.send("NearStreamBuyPremiumAddFunds");
             return addFunds({
                 amount: "240000000000000000000000",
-                streamId: streams[0].id,
+                streamId: premiumStream.id,
                 callbackUrl: "",
                 tokenAccountId: NEAR_CONSTANTS.tokenAccountId,
                 transactionMediator: transactionMediator,
