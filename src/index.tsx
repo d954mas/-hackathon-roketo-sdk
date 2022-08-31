@@ -81,7 +81,7 @@ let initContract = function () {
             account, // the account object that is connecting
             NEAR_CONSTANTS.gameContractName,
             {
-                viewMethods: ["get_game"], // view methods do not change state but usually return a value
+                viewMethods: ["get_game","get_games_active_list","get_games_list"], // view methods do not change state but usually return a value
                 changeMethods: ["create_game"], // change methods modify state
             }
         );
@@ -151,6 +151,34 @@ let contractCreateGame = function (firstPlayer: String, secondPlayer:String, fie
     });
 }
 
+let contractGetGamesList = function (player: String) {
+    // @ts-ignore
+    gameContract.get_games_list(
+        {
+            player: player,
+        }
+    ).then(function (list: any) {
+        console.log(list)
+        JsToDef.send("NearContractGetGamesList", {list: list});
+    }).catch(function (error: any) {
+        JsToDef.send("NearContractError", {error: error});
+    });
+}
+
+let contractGetGamesActiveList = function (player: String) {
+    // @ts-ignore
+    gameContract.get_games_active_list(
+        {
+            player: player,
+        }
+    ).then(function (list: any) {
+        console.log(list)
+        JsToDef.send("NearContractGetGamesActiveList", {list: list});
+    }).catch(function (error: any) {
+        JsToDef.send("NearContractError", {error: error});
+    });
+}
+
 window.game_sdk = {
     initNear: initNear,
     isLoggedIn: isLoggedIn,
@@ -158,4 +186,6 @@ window.game_sdk = {
     contractGetGame: contractGetGame,
     contractCreateGame: contractCreateGame,
     getAccountId: getAccountId,
+    contractGetGamesList: contractGetGamesList,
+    contractGetGamesActiveList: contractGetGamesActiveList,
 }
