@@ -270,6 +270,7 @@ let streamBuyPremium = function () {
         JsToDef.send("NearStreamBuyPremiumSuccess");
     }).catch(function (error) {
         JsToDef.send("NearStreamBuyPremiumError", {error: error});
+        throw error;
     })
 
 }
