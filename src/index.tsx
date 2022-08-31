@@ -103,6 +103,10 @@ let isLoggedIn = function () {
     return false
 }
 
+let isReady = function () {
+    return isLoggedIn() && !!gameContract;
+}
+
 let getAccountId = function () {
     if (account) {
         return account.accountId ? account.accountId.toString() : "";
@@ -124,20 +128,28 @@ let login = function () {
     }
 }
 
+let contractGetGameSet = new Set<Number>();
 let contractGetGame = function (idx: Number) {
     console.log("contractGetGame");
     console.log(idx);
-    // @ts-ignore
-    gameContract.get_game(
-        {
-            index: idx,
-        },
-    ).then(function (game: any) {
-        console.log(game)
-        JsToDef.send("NearContractGetGame", {game: game});
-    }).catch(function (error: any) {
-        JsToDef.send("NearContractError", {error: error});
-    });
+    if(contractGetGameSet.has(idx)){
+        console.log("game request already existed");
+    }else{
+        contractGetGameSet.add(idx)
+        // @ts-ignore
+        gameContract.get_game(
+            {
+                index: idx,
+            },
+        ).then(function (game: any) {
+            contractGetGameSet.delete(idx)
+            JsToDef.send("NearContractGetGame", {game: game, idx: idx});
+        }).catch(function (error: any) {
+            contractGetGameSet.delete(idx)
+            JsToDef.send("NearContractError", {error: error});
+        });
+    }
+
 }
 
 let contractCreateGame = function (firstPlayer: String, secondPlayer: String, fieldSize: Number) {
@@ -166,7 +178,6 @@ let contractGetGamesList = function (player: String) {
             player: player,
         }
     ).then(function (list: any) {
-        console.log(list)
         JsToDef.send("NearContractGetGamesList", {list: list});
     }).catch(function (error: any) {
         JsToDef.send("NearContractError", {error: error});
@@ -180,7 +191,6 @@ let contractGetGamesActiveList = function (player: String) {
             player: player,
         }
     ).then(function (list: any) {
-        console.log(list)
         JsToDef.send("NearContractGetGamesActiveList", {list: list});
     }).catch(function (error: any) {
         JsToDef.send("NearContractError", {error: error});
@@ -328,6 +338,7 @@ let streamCalculateEndTimestamp = function () {
 window.game_sdk = {
     initNear: initNear,
     isLoggedIn: isLoggedIn,
+    isReady: isReady,
     login: login,
     contractGetGame: contractGetGame,
     contractCreateGame: contractCreateGame,
