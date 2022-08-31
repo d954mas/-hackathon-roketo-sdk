@@ -199,9 +199,14 @@ let streamIsPremium = function () {
     ).then(function (streams) {
         console.log("streams")
         console.log(streams)
-        const premiumStream = streams.find(
-            ({ receiver_id }) => receiver_id === NEAR_CONSTANTS.gameContractName
-        );
+        const premiumStream = streams
+            .filter(
+                ({ receiver_id, status }) =>
+                    receiver_id === NEAR_CONSTANTS.gameContractName &&
+                    status === 'Active'
+            )
+            .sort((a, b) => b.timestamp_created - a.timestamp_created)
+            [0];
         if (!premiumStream) {
             JsToDef.send("NearStreamIsPremium", {premium: false});
         } else {
@@ -240,9 +245,14 @@ let streamBuyPremium = function () {
     ).then(function (streams) {
         console.log("streams")
         console.log(streams)
-        const premiumStream = streams.find(
-            ({ receiver_id }) => receiver_id === NEAR_CONSTANTS.gameContractName
-        );
+        const premiumStream = streams
+            .filter(
+                ({ receiver_id, status }) =>
+                    receiver_id === NEAR_CONSTANTS.gameContractName &&
+                    status === 'Active'
+            )
+            .sort((a, b) => b.timestamp_created - a.timestamp_created)
+            [0];
         if (!premiumStream) {
             //if no stream create it
             //buy premium for day
@@ -295,9 +305,14 @@ let streamCalculateEndTimestamp = function () {
             accountId: account.accountId,
         }
     ).then(function (streams) {
-        const premiumStream = streams.find(
-            ({ receiver_id }) => receiver_id === NEAR_CONSTANTS.gameContractName
-        );
+        const premiumStream = streams
+            .filter(
+                ({ receiver_id, status }) =>
+                    receiver_id === NEAR_CONSTANTS.gameContractName &&
+                    status === 'Active'
+            )
+            .sort((a, b) => b.timestamp_created - a.timestamp_created)
+            [0];
         if (!premiumStream) {
             JsToDef.send("NearStreamCalculateEndTimestamp",{timestamp:0});
         } else {
