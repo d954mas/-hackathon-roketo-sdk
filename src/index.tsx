@@ -55,10 +55,10 @@ let initNear = function () {
                 JsToDef.send("NearInitSuccess");
                 walletConnection = new WalletConnection(near, NEAR_CONSTANTS.roketoContractName);
                 account = walletConnection.account();
-                transactionMediator = {
-                    functionCall: transactions.functionCall,
+                const transactionMediator: TransactionMediator<NearAction> = {
+                    functionCall: (...args) => transactions.functionCall(...args),
                     // @ts-expect-error signAndSendTransaction is protected
-                    signAndSendTransaction: account.signAndSendTransaction,
+                    signAndSendTransaction: (...args) => account.signAndSendTransaction(...args),
                 };
                 JsToDef.send("NearInitWalletSuccess");
                 return initApiControl({
@@ -197,6 +197,8 @@ let streamIsPremium = function () {
             accountId: account.accountId,
         }
     ).then(function (streams) {
+        console.log("streams")
+        console.log(streams)
         if (streams.length === 0) {
             JsToDef.send("NearStreamIsPremium", {premium: false});
         } else {
