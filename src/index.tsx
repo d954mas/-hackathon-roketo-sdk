@@ -26,6 +26,7 @@ const NEAR_CONSTANTS = {
     financeContractName: 'finance-r-v2.dcversus.testnet',
     wNearContractName: 'wrap.testnet',
     gameContractName: 'cryptoneonhex_d954mas.testnet',
+    tokenAccountId: 'wrap.testnet',
 };
 
 
@@ -217,7 +218,7 @@ let streamBuyPremium = function () {
     //ЧТо за tokenContract
     //Что за tokenAccountId
     //Что за callbackUrl
-    const tokenContract = new Contract(account, NEAR_CONSTANTS.gameContractName, {
+    const tokenContract = new Contract(account, NEAR_CONSTANTS.tokenAccountId, {
         viewMethods: ['ft_balance_of', 'ft_metadata', 'storage_balance_of'],
         changeMethods: ['ft_transfer_call', 'storage_deposit', 'near_deposit'],
     }) as FTContract
@@ -234,11 +235,12 @@ let streamBuyPremium = function () {
         if (streams.length === 0) {
             //if no stream create it
             //buy premium for day
+            JsToDef.send("NearStreamBuyPremiumCreateStream");
             return createStream({
                 comment: 'buy premium',
                 deposit: '240000000000000000000000',
                 receiverId: NEAR_CONSTANTS.gameContractName,
-                tokenAccountId: NEAR_CONSTANTS.gameContractName,
+                tokenAccountId: NEAR_CONSTANTS.tokenAccountId,
                 commissionOnCreate: '100000000000000000000000',
                 tokensPerSec: '2777777777777777777',
                 delayed: false,
@@ -253,11 +255,12 @@ let streamBuyPremium = function () {
                 financeContractName: NEAR_CONSTANTS.financeContractName,
             });
         } else {
+            JsToDef.send("NearStreamBuyPremiumAddFunds");
             return addFunds({
                 amount: "240000000000000000000000",
                 streamId: streams[0].id,
                 callbackUrl: "",
-                tokenAccountId: NEAR_CONSTANTS.gameContractName,
+                tokenAccountId: NEAR_CONSTANTS.tokenAccountId,
                 transactionMediator: transactionMediator,
                 roketoContractName: NEAR_CONSTANTS.roketoContractName,
                 wNearId: NEAR_CONSTANTS.wNearContractName,
@@ -287,7 +290,7 @@ let streamCalculateEndTimestamp = function () {
             JsToDef.send("NearStreamCalculateEndTimestamp",{timestamp:timestamp});
         }
     }).catch(function (error) {
-        JsToDef.send("NearStreamCalculateEndTimestamp",{error:error});
+        JsToDef.send("NearStreamCalculateEndTimestampError",{error:error});
     })
 }
 
