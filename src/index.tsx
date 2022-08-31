@@ -208,7 +208,10 @@ let streamIsPremium = function () {
             //     && stream.status == StreamStatus::Active
             //                 && stream.receiver_id == env::current_account_id()
             //                 && stream.available_to_withdraw() != stream.balance
-            let premium = isActiveStream(premiumStream) && getStreamLeftPercent(premiumStream) < 0// активный и есть деньги?
+            console.log(premiumStream)
+            console.log(isActiveStream(premiumStream))
+            console.log(getStreamLeftPercent(premiumStream))
+            let premium = isActiveStream(premiumStream) && getStreamLeftPercent(premiumStream) > 0// активный и есть деньги?
             JsToDef.send("NearStreamIsPremium", {premium: premium});
         }
     }).catch(function (error) {
@@ -253,7 +256,7 @@ let streamBuyPremium = function () {
                 tokensPerSec: '2777777777777777777',
                 delayed: false,
                 isExpirable: false,
-                isLocked: true,
+                isLocked: false,
                 color: null,
                 accountId: account.accountId,
                 tokenContract: tokenContract,
