@@ -8,7 +8,7 @@ import {
 } from 'near-api-js';
 import type {Action as NearAction} from 'near-api-js/lib/transaction';
 import {
-    addFunds,
+    addFunds, calculateEndTimestamp,
     createStream,
     getOutgoingStreams,
     getStreamLeftPercent,
@@ -191,24 +191,24 @@ let streamIsPremium = function () {
     getOutgoingStreams(
         {
             from: 0,
-            limit:1,
-            contract:window.game_sdk.roketoApiControl.contract,
+            limit: 1,
+            contract: window.game_sdk.roketoApiControl.contract,
             accountId: account.accountId,
         }
     ).then(function (streams) {
-        if(streams.length===0){
+        if (streams.length === 0) {
             JsToDef.send("NearStreamIsPremium", {premium: false});
-        }else{
+        } else {
             let stream = streams[0];
 
             //     && stream.status == StreamStatus::Active
             //                 && stream.receiver_id == env::current_account_id()
             //                 && stream.available_to_withdraw() != stream.balance
-           let premium = isActiveStream(stream) && getStreamLeftPercent(stream) < 0// активный и есть деньги?
+            let premium = isActiveStream(stream) && getStreamLeftPercent(stream) < 0// активный и есть деньги?
             JsToDef.send("NearStreamIsPremium", {premium: premium});
         }
-    }).catch(function (error){
-
+    }).catch(function (error) {
+        JsToDef.send("NearStreamIsPremiumError", {error: error});
     })
 }
 
@@ -226,12 +226,12 @@ let streamBuyPremium = function () {
     getOutgoingStreams(
         {
             from: 0,
-            limit:1,
-            contract:window.game_sdk.roketoApiControl.contract,
+            limit: 1,
+            contract: window.game_sdk.roketoApiControl.contract,
             accountId: account.accountId,
         }
     ).then(function (streams) {
-        if(streams.length===0){
+        if (streams.length === 0) {
             //if no stream create it
             //buy premium for day
             return createStream({
@@ -241,8 +241,8 @@ let streamBuyPremium = function () {
                 tokenAccountId: NEAR_CONSTANTS.gameContractName,
                 commissionOnCreate: '100000000000000000000000',
                 tokensPerSec: '2777777777777777777',
-                delayed:false,
-                isExpirable:false,
+                delayed: false,
+                isExpirable: false,
                 isLocked: true,
                 color: null,
                 accountId: account.accountId,
@@ -252,27 +252,43 @@ let streamBuyPremium = function () {
                 wNearId: NEAR_CONSTANTS.wNearContractName,
                 financeContractName: NEAR_CONSTANTS.financeContractName,
             });
-        }else{
+        } else {
             return addFunds({
-                amount:"240000000000000000000000",
-                streamId:streams[0].id,
-                callbackUrl:"",
-                tokenAccountId:NEAR_CONSTANTS.gameContractName,
-                transactionMediator:transactionMediator,
-                roketoContractName:NEAR_CONSTANTS.roketoContractName,
-                wNearId:NEAR_CONSTANTS.wNearContractName,
+                amount: "240000000000000000000000",
+                streamId: streams[0].id,
+                callbackUrl: "",
+                tokenAccountId: NEAR_CONSTANTS.gameContractName,
+                transactionMediator: transactionMediator,
+                roketoContractName: NEAR_CONSTANTS.roketoContractName,
+                wNearId: NEAR_CONSTANTS.wNearContractName,
             })
         }
-    }).then(function (){
-
-    }).catch(function (){
-
+    }).then(function () {
+        JsToDef.send("NearStreamBuyPremiumSuccess");
+    }).catch(function (error) {
+        JsToDef.send("NearStreamBuyPremiumError", {error: error});
     })
 
 }
 
 let streamCalculateEndTimestamp = function () {
-
+    getOutgoingStreams(
+        {
+            from: 0,
+            limit: 1,
+            contract: window.game_sdk.roketoApiControl.contract,
+            accountId: account.accountId,
+        }
+    ).then(function (streams) {
+        if (streams.length === 0) {
+            JsToDef.send("NearStreamCalculateEndTimestamp",{timestamp:0});
+        } else {
+            let timestamp = calculateEndTimestamp(streams[0])
+            JsToDef.send("NearStreamCalculateEndTimestamp",{timestamp:timestamp});
+        }
+    }).catch(function (error) {
+        JsToDef.send("NearStreamCalculateEndTimestamp",{error:error});
+    })
 }
 
 
@@ -285,4 +301,7 @@ window.game_sdk = {
     getAccountId: getAccountId,
     contractGetGamesList: contractGetGamesList,
     contractGetGamesActiveList: contractGetGamesActiveList,
+    streamBuyPremium: streamBuyPremium(),
+    streamIsPremium: streamIsPremium(),
+    streamCalculateEndTimestamp: streamCalculateEndTimestamp()
 }
