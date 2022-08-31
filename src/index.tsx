@@ -55,7 +55,7 @@ let initNear = function () {
                 JsToDef.send("NearInitSuccess");
                 walletConnection = new WalletConnection(near, NEAR_CONSTANTS.roketoContractName);
                 account = walletConnection.account();
-                const transactionMediator: TransactionMediator<NearAction> = {
+                transactionMediator = {
                     functionCall: (...args) => transactions.functionCall(...args),
                     // @ts-expect-error signAndSendTransaction is protected
                     signAndSendTransaction: (...args) => account.signAndSendTransaction(...args),
