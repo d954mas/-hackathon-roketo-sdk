@@ -90,7 +90,7 @@ let initContract = function () {
             NEAR_CONSTANTS.gameContractName,
             {
                 viewMethods: ["get_game", "get_games_active_list", "get_games_list"], // view methods do not change state but usually return a value
-                changeMethods: ["create_game"], // change methods modify state
+                changeMethods: ["create_game","make_move"], // change methods modify state
             }
         );
     }
@@ -192,6 +192,24 @@ let contractGetGamesActiveList = function (player: String) {
         }
     ).then(function (list: any) {
         JsToDef.send("NearContractGetGamesActiveList", {list: list});
+    }).catch(function (error: any) {
+        JsToDef.send("NearContractError", {error: error});
+    });
+}
+
+let contractMakeMove = function (gameIndex: Number, moveType: String, x: Number,y:Number) {
+    console.log("contractMakeMove");
+    // @ts-ignore
+    gameContract.make_move(
+        {
+            index: gameIndex,
+            move_type: moveType,
+            cell: {x:x,y:y},
+        },
+        "300000000000000", // attached GAS (optional)
+       // "1000000000000000000000000" // attached deposit in yoctoNEAR (optional)
+    ).then(function (game: any) {
+        JsToDef.send("NearContractMakeMove");
     }).catch(function (error: any) {
         JsToDef.send("NearContractError", {error: error});
     });
@@ -342,6 +360,7 @@ window.game_sdk = {
     login: login,
     contractGetGame: contractGetGame,
     contractCreateGame: contractCreateGame,
+    contractMakeMove: contractMakeMove,
     getAccountId: getAccountId,
     contractGetGamesList: contractGetGamesList,
     contractGetGamesActiveList: contractGetGamesActiveList,
