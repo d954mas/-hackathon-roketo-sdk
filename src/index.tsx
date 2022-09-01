@@ -162,7 +162,7 @@ let contractCreateGame = function (firstPlayer: String, secondPlayer: String, fi
             field_size: fieldSize,
         },
         "300000000000000", // attached GAS (optional)
-        "1000000000000000000000000" // attached deposit in yoctoNEAR (optional)
+        "10000000000000000000000" // attached deposit in yoctoNEAR (optional)
     ).then(function (game: any) {
         console.log(game)
         JsToDef.send("NearContractCreateGame", {game: game});
@@ -207,7 +207,7 @@ let contractMakeMove = function (gameIndex: Number, moveType: String, x: Number,
             cell: {x:x,y:y},
         },
         "300000000000000", // attached GAS (optional)
-       // "1000000000000000000000000" // attached deposit in yoctoNEAR (optional)
+        "1000000000000000000000" // attached deposit in yoctoNEAR (optional)
     ).then(function (game: any) {
         JsToDef.send("NearContractMakeMove");
     }).catch(function (error: any) {
