@@ -9,6 +9,7 @@ I Use Defold game engine. It is not JS game engine so i can't mix it build proce
 
 ## Build.
 
+ 0. (OPTIONAL) Set NEAR_CONSTANTS.nameContractName to your deploy of smart contract. Or use default:'cryptoneonhex_d954mas.testnet',
  1. yarn build 
  2. Rename *build\static\js\main.????????.js* to
     *roketosdk.js* 
