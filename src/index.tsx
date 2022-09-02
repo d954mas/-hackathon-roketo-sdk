@@ -89,7 +89,7 @@ let initContract = function () {
             account, // the account object that is connecting
             NEAR_CONSTANTS.gameContractName,
             {
-                viewMethods: ["get_game", "get_games_active_list", "get_games_list"], // view methods do not change state but usually return a value
+                viewMethods: ["get_game", "get_games_active_list", "get_games_list","get_games_finish_list"], // view methods do not change state but usually return a value
                 changeMethods: ["create_game","make_move"], // change methods modify state
             }
         );
@@ -192,6 +192,19 @@ let contractGetGamesActiveList = function (player: String) {
         }
     ).then(function (list: any) {
         JsToDef.send("NearContractGetGamesActiveList", {list: list});
+    }).catch(function (error: any) {
+        JsToDef.send("NearContractError", {error: error});
+    });
+}
+
+let contractGetGamesFinishList = function (player: String) {
+    // @ts-ignore
+    gameContract.get_games_finish_list(
+        {
+            player: player,
+        }
+    ).then(function (list: any) {
+        JsToDef.send("NearContractGetGamesFinishList", {list: list});
     }).catch(function (error: any) {
         JsToDef.send("NearContractError", {error: error});
     });
@@ -364,6 +377,7 @@ window.game_sdk = {
     getAccountId: getAccountId,
     contractGetGamesList: contractGetGamesList,
     contractGetGamesActiveList: contractGetGamesActiveList,
+    contractGetGamesFinishList: contractGetGamesFinishList,
     streamBuyPremium: streamBuyPremium,
     streamIsPremium: streamIsPremium,
     streamCalculateEndTimestamp: streamCalculateEndTimestamp
