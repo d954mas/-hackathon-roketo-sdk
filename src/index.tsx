@@ -13,9 +13,10 @@ import {
     getOutgoingStreams,
     getStreamLeftPercent,
     initApiControl,
-    isActiveStream
+    isActiveStream, isLocked
 } from '@roketo/sdk';
 import type {FTContract, TransactionMediator} from '@roketo/sdk/dist/types';
+import {RoketoStream} from "@roketo/sdk/dist/types";
 
 global.Buffer = Buffer;
 const NEAR_CONSTANTS = {
@@ -89,8 +90,8 @@ let initContract = function () {
             account, // the account object that is connecting
             NEAR_CONSTANTS.gameContractName,
             {
-                viewMethods: ["get_game", "get_games_active_list", "get_games_list","get_games_finish_list"], // view methods do not change state but usually return a value
-                changeMethods: ["create_game","make_move"], // change methods modify state
+                viewMethods: ["get_game", "get_games_active_list", "get_games_list", "get_games_finish_list"], // view methods do not change state but usually return a value
+                changeMethods: ["create_game", "make_move"], // change methods modify state
             }
         );
     }
@@ -128,13 +129,22 @@ let login = function () {
     }
 }
 
+let logout = function () {
+    if (!isLoggedIn()) {
+        JsToDef.send("NearLogoutNoLogin");
+    } else {
+        walletConnection.signOut();
+        JsToDef.send("NearLogout");
+    }
+}
+
 let contractGetGameSet = new Set<Number>();
 let contractGetGame = function (idx: Number) {
     console.log("contractGetGame");
     console.log(idx);
-    if(contractGetGameSet.has(idx)){
+    if (contractGetGameSet.has(idx)) {
         console.log("game request already existed");
-    }else{
+    } else {
         contractGetGameSet.add(idx)
         // @ts-ignore
         gameContract.get_game(
@@ -210,14 +220,14 @@ let contractGetGamesFinishList = function (player: String) {
     });
 }
 
-let contractMakeMove = function (gameIndex: Number, moveType: String, x: Number,y:Number) {
+let contractMakeMove = function (gameIndex: Number, moveType: String, x: Number, y: Number) {
     console.log("contractMakeMove");
     // @ts-ignore
     gameContract.make_move(
         {
             index: gameIndex,
             move_type: moveType,
-            cell: {x:x,y:y},
+            cell: {x: x, y: y},
         },
         "300000000000000", // attached GAS (optional)
         "1000000000000000000000" // attached deposit in yoctoNEAR (optional)
@@ -228,35 +238,36 @@ let contractMakeMove = function (gameIndex: Number, moveType: String, x: Number,
     });
 }
 
+function streamFind():Promise<RoketoStream> {
+    return new Promise<RoketoStream>(function (resolve, reject) {
+        getOutgoingStreams(
+            {
+                from: 0,
+                limit: 500,
+                contract: window.game_sdk.roketoApiControl.contract,
+                accountId: account.accountId,
+            }
+        ).then(function (streams) {
+            let stream = streams.filter(
+                ({receiver_id, status, is_locked}) =>
+                    receiver_id === NEAR_CONSTANTS.gameContractName &&
+                    status === 'Active' && is_locked === false
+            )
+                .sort((a, b) => b.timestamp_created - a.timestamp_created)
+                [0];
+            resolve(stream)
+        }).catch(function (error) {
+            reject(error)
+        })
+    });
+}
+
 //return true if user have stream. Pay for be premium
 let streamIsPremium = function () {
-    getOutgoingStreams(
-        {
-            from: 0,
-            limit: 500,
-            contract: window.game_sdk.roketoApiControl.contract,
-            accountId: account.accountId,
-        }
-    ).then(function (streams) {
-        console.log("streams")
-        console.log(streams)
-        const premiumStream = streams
-            .filter(
-                ({ receiver_id, status }) =>
-                    receiver_id === NEAR_CONSTANTS.gameContractName &&
-                    status === 'Active'
-            )
-            .sort((a, b) => b.timestamp_created - a.timestamp_created)
-            [0];
+    streamFind().then(function (premiumStream) {
         if (!premiumStream) {
             JsToDef.send("NearStreamIsPremium", {premium: false});
         } else {
-            //     && stream.status == StreamStatus::Active
-            //                 && stream.receiver_id == env::current_account_id()
-            //                 && stream.available_to_withdraw() != stream.balance
-            console.log(premiumStream)
-            console.log(isActiveStream(premiumStream))
-            console.log(getStreamLeftPercent(premiumStream))
             let premium = isActiveStream(premiumStream) && getStreamLeftPercent(premiumStream) > 0// активный и есть деньги?
             JsToDef.send("NearStreamIsPremium", {premium: premium});
         }
@@ -276,24 +287,7 @@ let streamBuyPremium = function () {
     }) as FTContract
 
     //if have stream add money for 24h
-    getOutgoingStreams(
-        {
-            from: 0,
-            limit: 500,
-            contract: window.game_sdk.roketoApiControl.contract,
-            accountId: account.accountId,
-        }
-    ).then(function (streams) {
-        console.log("streams")
-        console.log(streams)
-        const premiumStream = streams
-            .filter(
-                ({ receiver_id, status }) =>
-                    receiver_id === NEAR_CONSTANTS.gameContractName &&
-                    status === 'Active'
-            )
-            .sort((a, b) => b.timestamp_created - a.timestamp_created)
-            [0];
+    streamFind().then(function (premiumStream) {
         if (!premiumStream) {
             //if no stream create it
             //buy premium for day
@@ -338,30 +332,15 @@ let streamBuyPremium = function () {
 }
 
 let streamCalculateEndTimestamp = function () {
-    getOutgoingStreams(
-        {
-            from: 0,
-            limit: 500,
-            contract: window.game_sdk.roketoApiControl.contract,
-            accountId: account.accountId,
-        }
-    ).then(function (streams) {
-        const premiumStream = streams
-            .filter(
-                ({ receiver_id, status }) =>
-                    receiver_id === NEAR_CONSTANTS.gameContractName &&
-                    status === 'Active'
-            )
-            .sort((a, b) => b.timestamp_created - a.timestamp_created)
-            [0];
+    streamFind().then(function (premiumStream) {
         if (!premiumStream) {
-            JsToDef.send("NearStreamCalculateEndTimestamp",{timestamp:0});
+            JsToDef.send("NearStreamCalculateEndTimestamp", {timestamp: 0});
         } else {
             let timestamp = calculateEndTimestamp(premiumStream)
-            JsToDef.send("NearStreamCalculateEndTimestamp",{timestamp:timestamp});
+            JsToDef.send("NearStreamCalculateEndTimestamp", {timestamp: timestamp});
         }
     }).catch(function (error) {
-        JsToDef.send("NearStreamCalculateEndTimestampError",{error:error});
+        JsToDef.send("NearStreamCalculateEndTimestampError", {error: error});
     })
 }
 
@@ -371,6 +350,7 @@ window.game_sdk = {
     isLoggedIn: isLoggedIn,
     isReady: isReady,
     login: login,
+    logout: logout,
     contractGetGame: contractGetGame,
     contractCreateGame: contractCreateGame,
     contractMakeMove: contractMakeMove,
